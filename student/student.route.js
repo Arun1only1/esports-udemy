@@ -1,6 +1,8 @@
 import express from "express";
 import { addStudentValidationSchema } from "./student.validation.js";
 import Student from "./student.model.js";
+import { validateMongoIdFromReqParams } from "../middlewares/validate.id.from.req.params.js";
+import { validateStudentDataFromReqBody } from "./student.middleware.js";
 
 const router = express.Router();
 
@@ -73,4 +75,84 @@ router.post(
   }
 );
 
+router.delete(
+  "/student/delete/:id",
+  validateMongoIdFromReqParams,
+  async (req, res) => {
+    // extract student id from req.params
+    const studentId = req.params.id;
+
+    // find student by id
+    const student = await Student.findOne({ _id: studentId });
+
+    // if not student, throw error
+    if (!student) {
+      return res.status(404).send({ message: "Student does not exist." });
+    }
+
+    // delete student
+    await Student.deleteOne({ _id: studentId });
+
+    // send response
+    return res
+      .status(200)
+      .send({ message: "Student is deleted successfully." });
+  }
+);
+
+router.get(
+  "/student/details/:id",
+  validateMongoIdFromReqParams,
+  async (req, res) => {
+    // extract student id from req.params
+    const studentId = req.params.id;
+
+    // find student by id
+    const student = await Student.findOne({ _id: studentId });
+
+    // if not student, throw error
+    if (!student) {
+      return res.status(404).send({ message: "Student does not exist." });
+    }
+
+    // send student as response
+    return res
+      .status(200)
+      .send({ message: "success", studentDetails: student });
+  }
+);
+
+router.put(
+  "/student/edit/:id",
+  validateMongoIdFromReqParams,
+  validateStudentDataFromReqBody,
+  async (req, res) => {
+    // extract id from req.params
+    const studentId = req.params.id;
+
+    // extract new values from req.body
+    const newValues = req.body;
+
+    // find student by id
+    const student = await Student.findOne({ _id: studentId });
+
+    // if not student, throw error
+    if (!student) {
+      return res.status(404).send({ message: "Student does not exist." });
+    }
+
+    // edit student
+    await Student.updateOne(
+      { _id: studentId },
+      {
+        $set: { ...newValues },
+      }
+    );
+
+    // send response
+    return res
+      .status(200)
+      .send({ message: "Student is updated successfully." });
+  }
+);
 export default router;
